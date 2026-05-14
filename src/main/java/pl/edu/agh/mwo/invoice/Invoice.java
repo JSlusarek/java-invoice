@@ -1,20 +1,18 @@
 package pl.edu.agh.mwo.invoice;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import pl.edu.agh.mwo.invoice.product.Product;
 
 public class Invoice {
-    private Collection<Product> products;
+    private Map<Product, Integer> products;
     private Integer number;
 
     public Invoice() {
-        this.products = new ArrayList<Product>();
         this.number = InIDGenerator.generateNextId();
+        this.products = new LinkedHashMap<>();
     }
 
     public Integer getNumber() {
@@ -22,69 +20,43 @@ public class Invoice {
     }
 
     public void addProduct(Product product) {
-        if (product == null) {
-            throw new IllegalArgumentException("Produkt nie może być nullem !!!!");
-        }
-        this.products.add(product);
+        addProduct(product, 1);
     }
 
     public void addProduct(Product product, Integer quantity) {
-        if (product == null) {
-            throw new IllegalArgumentException("Produkt nie może być nullem !!!!");
-        }
-        if (quantity == 0 || quantity < 0) {
-            throw new IllegalArgumentException("Ilość nie może być równa 0 albo ujemna !!!!");
-        }
-        for (int i = 0; i < quantity; i++) {
-            products.add(product);
-        }
+        if (product == null)
+            throw new IllegalArgumentException("Produkt nie może być nullem");
+        if (quantity <= 0)
+            throw new IllegalArgumentException("Ilość musi być dodatnia");
+        products.merge(product, quantity, Integer::sum);
     }
 
     public BigDecimal getSubtotal() {
-        if (this.products == null) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (Product i : this.products) {
-            total = total.add(i.getPrice());
-        }
-        System.out.println(total);
-        return total;
+        return products.entrySet().stream()
+                .map(e -> e.getKey().getPrice().multiply(BigDecimal.valueOf(e.getValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BigDecimal getTax() {
-        if (products == null) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (Product i : this.products) {
-            BigDecimal taxValue = i.getPrice().multiply(i.getTaxPercent());
-            total = total.add(taxValue);
-        }
-        System.out.println(total);
-        return total;
+        return products.entrySet().stream()
+                .map(e -> e.getKey().getPrice()
+                        .multiply(e.getKey().getTaxPercent())
+                        .multiply(BigDecimal.valueOf(e.getValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BigDecimal getTotal() {
-        if (products == null) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (Product i : this.products) {
-            total = total.add(i.getPriceWithTax());
-        }
-        System.out.println(total);
-        return total;
+        return products.entrySet().stream()
+                .map(e -> e.getKey().getPriceWithTax().multiply(BigDecimal.valueOf(e.getValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
     public void printInvoice() {
         System.out.println("Invoice Number: " + getNumber());
 
-        Map<Product, Long> counted = products.stream()
-                .collect(Collectors.groupingBy(p -> p, Collectors.counting()));
-
-        for (Map.Entry<Product, Long> entry : counted.entrySet()) {
+        for (Map.Entry<Product, Integer> entry : products.entrySet()) {
             Product p = entry.getKey();
-            long qty = entry.getValue();
+            int qty = entry.getValue();
             BigDecimal lineTotal = p.getPriceWithTax().multiply(BigDecimal.valueOf(qty));
 
             System.out.println("Quantity: " + qty
