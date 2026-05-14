@@ -11,7 +11,7 @@ public class Invoice {
     private Integer number;
 
     public Invoice() {
-        this.number = InIDGenerator.generateNextId();
+        this.number = InvoiceIdGenerator.generateNextId();
         this.products = new LinkedHashMap<>();
     }
 
@@ -24,10 +24,12 @@ public class Invoice {
     }
 
     public void addProduct(Product product, Integer quantity) {
-        if (product == null)
+        if (product == null) {
             throw new IllegalArgumentException("Produkt nie może być nullem");
-        if (quantity <= 0)
+        }
+        if (quantity <= 0) {
             throw new IllegalArgumentException("Ilość musi być dodatnia");
+        }
         products.merge(product, quantity, Integer::sum);
     }
 
