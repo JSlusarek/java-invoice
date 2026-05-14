@@ -8,10 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import pl.edu.agh.mwo.invoice.Invoice;
-import pl.edu.agh.mwo.invoice.product.DairyProduct;
-import pl.edu.agh.mwo.invoice.product.OtherProduct;
-import pl.edu.agh.mwo.invoice.product.Product;
-import pl.edu.agh.mwo.invoice.product.TaxFreeProduct;
+import pl.edu.agh.mwo.invoice.product.*;
 
 public class InvoiceTest {
     private Invoice invoice;
@@ -110,6 +107,96 @@ public class InvoiceTest {
         invoice.addProduct(new OtherProduct("Pinezka", new BigDecimal("0.01")), 1000);
         Assert.assertThat(new BigDecimal("54.70"), Matchers.comparesEqualTo(invoice.getTotal()));
     }
+    // --- BottleOfWine ---
+
+    @Test
+    public void testInvoiceWithBottleOfWineTotalIncludesExcise() {
+        // 100 + 30% VAT + 5.56 akcyza = 135.56
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("135.56"), Matchers.comparesEqualTo(invoice.getTotal()));
+    }
+
+    @Test
+    public void testInvoiceWithBottleOfWineSubtotalExcludesExcise() {
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("100"), Matchers.comparesEqualTo(invoice.getSubtotal()));
+    }
+
+    @Test
+    public void testInvoiceWithBottleOfWineTaxIncludesExcise() {
+        // 30 VAT + 5.56 akcyza = 35.56
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("35.56"), Matchers.comparesEqualTo(invoice.getTax()));
+    }
+
+    @Test
+    public void testInvoiceWithMultipleBottlesOfWine() {
+        // 2 * 135.56 = 271.12
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")), 2);
+        Assert.assertThat(new BigDecimal("271.12"), Matchers.comparesEqualTo(invoice.getTotal()));
+    }
+
+// --- FuelCanister ---
+
+    @Test
+    public void testInvoiceWithFuelCanisterTotalIncludesExcise() {
+        // 100 + 30% VAT + 5.56 akcyza = 135.56
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("135.56"), Matchers.comparesEqualTo(invoice.getTotal()));
+    }
+
+    @Test
+    public void testInvoiceWithFuelCanisterSubtotalExcludesExcise() {
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("100"), Matchers.comparesEqualTo(invoice.getSubtotal()));
+    }
+
+    @Test
+    public void testInvoiceWithFuelCanisterTaxIncludesExcise() {
+        // 30 VAT + 5.56 akcyza = 35.56
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("35.56"), Matchers.comparesEqualTo(invoice.getTax()));
+    }
+
+    @Test
+    public void testInvoiceWithMultipleFuelCanisters() {
+        // 3 * 135.56 = 406.68
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")), 3);
+        Assert.assertThat(new BigDecimal("406.68"), Matchers.comparesEqualTo(invoice.getTotal()));
+    }
+
+// --- Mieszane ---
+
+    @Test
+    public void testInvoiceWithExciseAndNonExciseProducts() {
+        // BottleOfWine: 135.56, DairyProduct: 108.00, total: 243.56
+        invoice.addProduct(new BottleOfWine("Wino", new BigDecimal("100")));
+        invoice.addProduct(new DairyProduct("Maslo", new BigDecimal("100")));
+        Assert.assertThat(new BigDecimal("243.56"), Matchers.comparesEqualTo(invoice.getTotal()));
+    }
+
+    @Test
+    public void testSubtotalPlusTaxEqualsTotal() {
+        invoice.addProduct(new BottleOfWine("Wino", new BigDecimal("100")));
+        invoice.addProduct(new DairyProduct("Maslo", new BigDecimal("100")));
+        Assert.assertThat(
+                invoice.getSubtotal().add(invoice.getTax()),
+                Matchers.comparesEqualTo(invoice.getTotal())
+        );
+    }
+
+// --- Numer faktury ---
+
+    @Test
+    public void testInvoiceNumberIsNotNull() {
+        Assert.assertNotNull(invoice.getNumber());
+    }
+
+    @Test
+    public void testTwoInvoicesHaveDifferentNumbers() {
+        Invoice second = new Invoice();
+        Assert.assertNotEquals(invoice.getNumber(), second.getNumber());
+    }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvoiceWithZeroQuantity() {
@@ -125,4 +212,24 @@ public class InvoiceTest {
     public void testAddingNullProduct() {
         invoice.addProduct(null);
     }
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvoiceWithZeroQuantityBottleOfWine() {
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")), 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvoiceWithNegativeQuantityBottleOfWine() {
+        invoice.addProduct(new BottleOfWine("Merlot", new BigDecimal("100")), -1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvoiceWithZeroQuantityFuelCanister() {
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")), 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvoiceWithNegativeQuantityFuelCanister() {
+        invoice.addProduct(new FuelCanister("Benzyna", new BigDecimal("100")), -1);
+    }
+
 }

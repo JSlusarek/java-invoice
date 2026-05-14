@@ -39,9 +39,12 @@ public class Invoice {
 
     public BigDecimal getTax() {
         return products.entrySet().stream()
-                .map(e -> e.getKey().getPrice()
-                        .multiply(e.getKey().getTaxPercent())
-                        .multiply(BigDecimal.valueOf(e.getValue())))
+                .map(e -> {
+                    Product p = e.getKey();
+                    BigDecimal qty = BigDecimal.valueOf(e.getValue());
+                    BigDecimal vat = p.getPrice().multiply(p.getTaxPercent());
+                    return vat.add(p.getExcise()).multiply(qty);
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
