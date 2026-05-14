@@ -1,6 +1,5 @@
 package pl.edu.agh.mwo.invoice.product;
 
-import javax.lang.model.element.Name;
 import java.math.BigDecimal;
 
 public class OtherProduct extends Product {
